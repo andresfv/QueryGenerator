@@ -18,11 +18,13 @@ import org.primefaces.model.SortMeta;
 import org.primefaces.model.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
  * @author Luis Andrés Fallas Valenciano
  */
+@Transactional
 @Service
 public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
