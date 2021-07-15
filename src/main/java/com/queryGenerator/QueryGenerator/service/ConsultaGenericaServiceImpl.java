@@ -5,7 +5,8 @@
  */
 package com.queryGenerator.QueryGenerator.service;
 
-import cr.ac.una.cgi.sigesa.epf.atv.domain.VistaMovimientoContableActivoFijo;
+import com.queryGenerator.QueryGenerator.entity.EstadoActivoFijo;
+import com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,7 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
 
     @Override
-    public List<VistaMovimientoContableActivoFijo> findVistaMovimientoContableActivoFijo(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros) {
+    public List<VistaMovimientoContableActivoFijo> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros) {
 
 ///Para crear el query de forma generica se puede dividir en 4 partes que serían: select from, where, group by, order by
         StringBuilder selectQuery = new StringBuilder(consultaHql);
@@ -71,10 +72,8 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
             query.setFirstResult(pageNumber);
             query.setMaxResults(pageSize);
 
-            Iterator<Map.Entry<String, Object>> parametroIterador = listaParametros.entrySet().iterator();
-            while (parametroIterador.hasNext()) {
-                Map.Entry<String, Object> parametro = parametroIterador.next();
-                query.setParameter(parametro.getKey(), "%" + parametro.getValue() + "%");
+            for (Map.Entry<String, Object> parametro : listaParametros.entrySet()) {
+                query.setParameter(parametro.getKey(), parametro.getValue());
             }
 
             List<VistaMovimientoContableActivoFijo> listaMovimientosContables = query.getResultList();
@@ -85,8 +84,41 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
     }
 
     @Override
-    public long countVistaMovimientoContableActivoFijo(Map<String, FilterMeta> filterBy, String consultaHql) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, String consultaHql) {
+        ///Para crear el query de forma generica se puede dividir en 4 partes que serían: select from, where, group by, order by
+        StringBuilder selectQuery = new StringBuilder(consultaHql);
+        StringBuilder whereQuery = new StringBuilder();
+        StringBuilder groupByQuery = new StringBuilder();
+        Map<String, Object> listaParametros = new HashMap<String, Object>();
+
+        //FILTRADO POR DATATABLE
+        if (filterBy != null && filterBy.size() > 0) {
+            whereQuery = new StringBuilder(filtrarDataTable(filterBy, whereQuery, listaParametros));
+        }
+
+        //ARMADO DEL HQL
+        if (selectQuery.length() > 0) {
+            StringBuilder stringQuery = new StringBuilder();
+            stringQuery.append(selectQuery);
+            if (whereQuery.length() > 0) {
+                stringQuery.append(whereQuery);
+            }
+            if (groupByQuery.length() > 0) {
+                stringQuery.append(groupByQuery);
+            }
+
+            //EJECUCION DEL HQL
+            Query query = entityManager.createQuery(stringQuery.toString());
+            Iterator<Map.Entry<String, Object>> parametroIterador = listaParametros.entrySet().iterator();
+            while (parametroIterador.hasNext()) {
+                Map.Entry<String, Object> parametro = parametroIterador.next();
+                query.setParameter(parametro.getKey(), parametro.getValue());
+            }
+
+            long countResult = (long) query.getSingleResult();
+            return countResult;
+        }
+        return 0L;
     }
 
     /**
@@ -103,15 +135,17 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
         for (FilterMeta filterMeta : filterBy.values()) {
             if (filterMeta.getFilterValue() != null) {
-                listaParametros.put(filterMeta.getFilterField(), filterMeta.getFilterValue());
                 if (whereQuery.length() == 0) {
                     whereQuery.append(" where ");
                 } else {
                     whereQuery.append(" and ");
                 }
-                if (filterMeta.getFilterMatchMode().equals(MatchMode.STARTS_WITH)) {
-                    whereQuery.append(filterMeta.getFilterField() + " like " + ":" + filterMeta.getFilterField() + "");
+                if (filterMeta.getFilterMatchMode().equals(MatchMode.STARTS_WITH) || filterMeta.getFilterMatchMode().equals(MatchMode.CONTAINS)) {
+                    listaParametros.put(filterMeta.getFilterField(), "%" + filterMeta.getFilterValue() + "%");
+                    whereQuery.append(filterMeta.getFilterField() + " like " + ":" + filterMeta.getFilterField());
+
                 } else if (filterMeta.getFilterMatchMode().equals(MatchMode.EXACT)) {
+                    listaParametros.put(filterMeta.getFilterField(), filterMeta.getFilterValue());
                     whereQuery.append(filterMeta.getFilterField() + " = " + ":" + filterMeta.getFilterField());
                 }
             }

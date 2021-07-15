@@ -5,7 +5,8 @@
  */
 package com.queryGenerator.QueryGenerator.service;
 
-import cr.ac.una.cgi.sigesa.epf.atv.domain.VistaMovimientoContableActivoFijo;
+import com.queryGenerator.QueryGenerator.entity.EstadoActivoFijo;
+import com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo;
 import java.util.List;
 import java.util.Map;
 import org.primefaces.model.FilterMeta;
@@ -17,8 +18,8 @@ import org.primefaces.model.SortMeta;
  */
 public interface ConsultaGenericaService {
 
-    public List<VistaMovimientoContableActivoFijo> findVistaMovimientoContableActivoFijo(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros);
+    public List<VistaMovimientoContableActivoFijo> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros);
 
-    public long countVistaMovimientoContableActivoFijo(Map<String, FilterMeta> filterBy, String consultaHql);
+    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, String consultaHql);
 
 }

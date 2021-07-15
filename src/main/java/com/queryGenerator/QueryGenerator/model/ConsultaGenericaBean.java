@@ -1,5 +1,7 @@
 package com.queryGenerator.QueryGenerator.model;
 
+import com.queryGenerator.QueryGenerator.entity.EstadoActivoFijo;
+import com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo;
 import com.queryGenerator.QueryGenerator.service.ConsultaGenericaService;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +10,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Named;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import cr.ac.una.cgi.sigesa.epf.atv.domain.VistaMovimientoContableActivoFijo;
 import java.util.HashMap;
 import java.util.Map;
 import javax.faces.application.FacesMessage;
@@ -23,7 +24,7 @@ public class ConsultaGenericaBean {
     @Autowired
     ConsultaGenericaService consultaGenericaService;
 
-    List<VistaMovimientoContableActivoFijo> listaMovimientosContablesActivoFijo;
+    List<VistaMovimientoContableActivoFijo> listaResultadosConsulta;
     FacesMessage message;
 
     private LazyDataModel<VistaMovimientoContableActivoFijo> lazyModel;
@@ -34,39 +35,25 @@ public class ConsultaGenericaBean {
 
     @PostConstruct
     public void init() {
-        listaMovimientosContablesActivoFijo = new ArrayList<VistaMovimientoContableActivoFijo>();
+        listaResultadosConsulta = new ArrayList<VistaMovimientoContableActivoFijo>();
 
-        consultaHQL = "select new cr.ac.una.cgi.sigesa.epf.atv.domain.VistaMovimientoContableActivoFijo ( \n"
+        consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo ( \n"
                 + "vmc.fechaAplicacion, \n"
-                + "vmc.numeroAsiento, \n"
-                + "vmc.origenTransaccion, \n"
-                + "vmc.referencia, \n"
-                + "vmc.concepto, \n"
-                + "vmc.periodoMensual, \n"
-                + "vmc.periodoAnual, \n"
-                + "vmc.activo, \n"
-                + "vmc.montoUnitario, \n"
-                + "vmc.montoUnitarioExtranjero, \n"
-                + "vmc.debe,\n"
-                + "vmc.haber,\n"
-                + "vmc.debeExtranjera,\n"
-                + "vmc.haberExtranjera,\n"
-                + "vmc.recepcion, \n"
-                + "vmc.ordenCompra, \n"
-                + "vmc.registroBancario) \n"
+                + "vmc.numeroAsiento) \n"
                 + "from  VistaMovimientoContableActivoFijo   vmc\n";
 //                + "where vmc.cuentaContable = :cuentaContable\n"
 //                + "and vmc.fechaAplicacion >= :fechaDesde \n"
 //                + "and vmc.fechaAplicacion <= :fechaHasta";
+
+//        consultaHQL = "select ea from EstadoActivoFijo ea";
     }
 
-
-    public List<VistaMovimientoContableActivoFijo> getListaMovimientosContablesActivoFijo() {
-        return listaMovimientosContablesActivoFijo;
+    public List<VistaMovimientoContableActivoFijo> getListaResultadosConsulta() {
+        return listaResultadosConsulta;
     }
 
-    public void setListaMovimientosContablesActivoFijo(List<VistaMovimientoContableActivoFijo> listaMovimientosContablesActivoFijo) {
-        this.listaMovimientosContablesActivoFijo = listaMovimientosContablesActivoFijo;
+    public void setListaResultadosConsulta(List<VistaMovimientoContableActivoFijo> listaResultadosConsulta) {
+        this.listaResultadosConsulta = listaResultadosConsulta;
     }
 
     public LazyDataModel<VistaMovimientoContableActivoFijo> getLazyModel() {
@@ -84,15 +71,14 @@ public class ConsultaGenericaBean {
             @Override
             public List<VistaMovimientoContableActivoFijo> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
 
-                long rowCount = consultaGenericaService.countVistaMovimientoContableActivoFijo(filterBy, consultaHQL);
+//                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, "select count(vmc.numeroAsiento) from  VistaMovimientoContableActivoFijo vmc");
 
-                List<VistaMovimientoContableActivoFijo> movimientosContables = consultaGenericaService.findVistaMovimientoContableActivoFijo(offset, pageSize, sortBy, filterBy, consultaHQL, listaParametros);
+                List<VistaMovimientoContableActivoFijo> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, consultaHQL, listaParametros);
 
-//                long rowCount = movimientosContables.size() < pageSize ? offset + movimientosContables.size() : offset + pageSize + 1;
-                // Setea el número total de filas de la consulta para establecer la ultima pagina
-                setRowCount((int) rowCount);
+                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+                setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
 
-                return movimientosContables;
+                return resultadosConsulta;
             }
         };
     }

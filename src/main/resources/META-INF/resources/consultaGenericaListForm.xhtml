@@ -14,7 +14,7 @@
         <p:dataTable id="consultaGenericaDataTable" 
                      widgetVar="consultaGenericaDataTable"
                      var="row" 
-                     value="#{consultaMateriaBean.lazyModel}" 
+                     value="#{consultaGenericaBean.lazyModel}" 
                      rows="10"
                      scrollable="true" 
                      draggableColumns="true"
@@ -50,7 +50,7 @@
                           footerText="Número Asiento" 
                           sortBy="#{row.numeroAsiento}" 
                           filterBy="#{row.numeroAsiento}"
-                          filterMatchMode="exact">
+                          filterMatchMode="contains">
                     <h:outputText value="#{row.numeroAsiento}"/>
                 </p:column>
          
