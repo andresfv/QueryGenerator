@@ -5,16 +5,45 @@
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-                xmlns:p="http://primefaces.org/ui">
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:pe="http://primefaces.org/ui/extensions">
 
 
     <ui:define name="center">
-        
+        <p:toolbar>
+            <p:toolbarGroup>
+                <p:commandButton type="button" value="Buscar" icon="ui-icon-circle-zoomin" styleClass="p-mr-2" update="centerForm"/>
+                <p:commandButton type="button" value="Salir" icon="ui-icon-arrowreturnthick-1-w" styleClass="ui-button-success" />
+            </p:toolbarGroup>
+        </p:toolbar>
+
+        <p:panelGrid columns="2" styleClass="una-panelgrid">
+            <p:outputLabel for="tipoConsultaSelectOneMenu" value="Tipo de Consulta"/>
+            <p:selectOneMenu id="tipoConsultaSelectOneMenu" value="#{consultaGenericaBean.tipoConsulta}">
+                <f:selectItem itemLabel="Normal" itemValue="1" itemDescription="Recomendada para consultas ligeras"/>
+                <f:selectItem itemLabel="Personalizada" itemValue="2" itemDescription="Recomendada para consultas pesadas"/>
+                <p:ajax update="centerForm" process="@this"/>
+            </p:selectOneMenu>
+        </p:panelGrid>
+
+        <p:panel id="panelGridForm"  header="Ingrese la consulta HQL">
+            <pe:codeMirror id="hqlCodeMirror" 
+                           lineWrapping="150"
+                           widgetVar="myCodeMirror"   
+                           mode="text/x-plsql"                           
+                           process="@this"                           
+                           theme="eclipse" 
+                           value="#{consultaGenericaBean.consultaHQL}" 
+                           lineNumbers="true"                                                         
+                           extraKeys="{ 'Ctrl-Space': function(cm) {CodeMirror.simpleHint(cm, PF('myCodeMirror').complete());}}">                
+            </pe:codeMirror>
+            <p:message id="hqlMessage" for="hqlCodeMirror"/>
+        </p:panel>
 
         <p:dataTable id="consultaGenericaDataTable" 
                      widgetVar="consultaGenericaDataTable"
                      var="row" 
-                     value="#{consultaGenericaBean.lazyModel}" 
+                     value="#{consultaGenericaBean.tipoConsulta == 2? consultaGenericaBean.lazyModel:consultaGenericaBean.listaResultadosConsulta}" 
                      rows="10"
                      scrollable="true" 
                      draggableColumns="true"
@@ -27,43 +56,43 @@
                      rowsPerPageTemplate="5,10,15"
                      reflow="true"
                      multiViewState="true"
-                     lazy="true">
+                     lazy="#{consultaGenericaBean.tipoConsulta == 2}">
 
             <f:facet name="header">
-                 <div class="p-d-flex p-jc-between p-ai-center">
-                Lista de Resultados
-                
-                <div align="right">
-                <p:commandButton id="consultaGenericaToggler" 
-                                 type="button"
-                                 title="Ocultar Columnas"
-                                 icon="pi pi-align-justify" 
-                                 />
-                
-                <p:columnToggler datasource="consultaGenericaDataTable" 
-                                 trigger="consultaGenericaToggler"/>
+                <div class="p-d-flex p-jc-between p-ai-center">
+                    Lista de Resultados
+
+                    <div align="right">
+                        <p:commandButton id="consultaGenericaToggler" 
+                                         type="button"
+                                         title="Ocultar Columnas"
+                                         icon="pi pi-align-justify" 
+                                         />
+
+                        <p:columnToggler datasource="consultaGenericaDataTable" 
+                                         trigger="consultaGenericaToggler"/>
+                    </div>
                 </div>
-                  </div>
             </f:facet>
 
-           <p:column      headerText="Número Asiento"
-                          footerText="Número Asiento" 
-                          sortBy="#{row.numeroAsiento}" 
-                          filterBy="#{row.numeroAsiento}"
-                          filterMatchMode="contains">
-                    <h:outputText value="#{row.numeroAsiento}"/>
-                </p:column>
-         
-                <p:column headerText="Fecha Documento" 
-                          footerText="Fecha Documento" 
-                          sortBy="#{row.fechaAplicacion}" 
-                          filterBy="#{row.fechaAplicacion}"
-                          filterMatchMode="exact">
-                    <h:outputText value="#{row.fechaAplicacion}">
-                        <f:convertDateTime pattern="dd-MM-yyyy" 
-                                           timeZone="America/Costa_Rica"/>
-                    </h:outputText>
-                </p:column>
+            <p:column      headerText="Número Asiento"
+                           footerText="Número Asiento" 
+                           sortBy="#{row.numeroAsiento}" 
+                           filterBy="#{row.numeroAsiento}"
+                           filterMatchMode="contains">
+                <h:outputText value="#{row.numeroAsiento}"/>
+            </p:column>
+
+            <p:column headerText="Fecha Documento" 
+                      footerText="Fecha Documento" 
+                      sortBy="#{row.fechaAplicacion}" 
+                      filterBy="#{row.fechaAplicacion}"
+                      filterMatchMode="exact">
+                <h:outputText value="#{row.fechaAplicacion}">
+                    <f:convertDateTime pattern="dd-MM-yyyy" 
+                                       timeZone="America/Costa_Rica"/>
+                </h:outputText>
+            </p:column>
         </p:dataTable>
     </ui:define>
 </ui:composition>

@@ -1,7 +1,5 @@
 package com.queryGenerator.QueryGenerator.model;
 
-import com.queryGenerator.QueryGenerator.entity.EstadoActivoFijo;
-import com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo;
 import com.queryGenerator.QueryGenerator.service.ConsultaGenericaService;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,66 +18,92 @@ import org.primefaces.model.SortMeta;
 @Named
 public class ConsultaGenericaBean {
 
-
     @Autowired
     ConsultaGenericaService consultaGenericaService;
 
-    List<VistaMovimientoContableActivoFijo> listaResultadosConsulta;
+    List<Object> dataSource;
+    List<Object> listaResultadosConsulta;
     FacesMessage message;
 
-    private LazyDataModel<VistaMovimientoContableActivoFijo> lazyModel;
+    private LazyDataModel<Object> lazyModel;
 
-    String consultaHQL;
+//    String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
+//            + "                vmc.fechaAplicacion, \n"
+//            + "                vmc.numeroAsiento)\n"
+//            + "                from  VistaMovimientoContableActivoFijo   vmc";
+
+    String consultaHQL = "select cat.id, (select max (kit.weight)"
+            + " from cat.kitten kit where kit.weight = 100)"
+            + " from Cat as cat"
+            + " where cat.name = some (select name.nickName from Name as name)";
+
+
+    int tipoConsulta = 1;
 
     Map<String, Object> listaParametros = new HashMap<String, Object>();
 
     @PostConstruct
     public void init() {
-        listaResultadosConsulta = new ArrayList<VistaMovimientoContableActivoFijo>();
+        dataSource = new ArrayList<Object>();
+        listaResultadosConsulta = new ArrayList<Object>();
 
-        consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo ( \n"
-                + "vmc.fechaAplicacion, \n"
-                + "vmc.numeroAsiento) \n"
-                + "from  VistaMovimientoContableActivoFijo   vmc\n";
-//                + "where vmc.cuentaContable = :cuentaContable\n"
-//                + "and vmc.fechaAplicacion >= :fechaDesde \n"
-//                + "and vmc.fechaAplicacion <= :fechaHasta";
+        consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
 
-//        consultaHQL = "select ea from EstadoActivoFijo ea";
+        if (tipoConsulta == 1) {
+            listaResultadosConsulta = consultaGenericaService.getResultadosConsulta(consultaHQL);
+        }
     }
-
-    public List<VistaMovimientoContableActivoFijo> getListaResultadosConsulta() {
-        return listaResultadosConsulta;
-    }
-
-    public void setListaResultadosConsulta(List<VistaMovimientoContableActivoFijo> listaResultadosConsulta) {
-        this.listaResultadosConsulta = listaResultadosConsulta;
-    }
-
-    public LazyDataModel<VistaMovimientoContableActivoFijo> getLazyModel() {
-        return lazyModel;
-    }
-
-    public void setLazyModel(LazyDataModel<VistaMovimientoContableActivoFijo> lazyModel) {
-        this.lazyModel = lazyModel;
-    }
-
 
     @PostConstruct
     public void lazyLoad() {
-        lazyModel = new LazyDataModel<VistaMovimientoContableActivoFijo>() {
+        lazyModel = new LazyDataModel<Object>() {
             @Override
-            public List<VistaMovimientoContableActivoFijo> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+            public List<Object> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
 
-//                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, "select count(vmc.numeroAsiento) from  VistaMovimientoContableActivoFijo vmc");
+                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, consultaHQL, listaParametros);
 
-                List<VistaMovimientoContableActivoFijo> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, consultaHQL, listaParametros);
+                List<Object> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, consultaHQL, listaParametros);
 
-                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+//              long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
                 setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
 
                 return resultadosConsulta;
+
             }
         };
     }
+
+    public int getTipoConsulta() {
+        return tipoConsulta;
+    }
+
+    public void setTipoConsulta(int tipoConsulta) {
+        this.tipoConsulta = tipoConsulta;
+    }
+
+    public String getConsultaHQL() {
+        return consultaHQL;
+    }
+
+    public void setConsultaHQL(String consultaHQL) {
+        this.consultaHQL = consultaHQL;
+    }
+
+
+    public List<Object> getListaResultadosConsulta() {
+        return listaResultadosConsulta;
+    }
+
+    public void setListaResultadosConsulta(List<Object> listaResultadosConsulta) {
+        this.listaResultadosConsulta = listaResultadosConsulta;
+    }
+
+    public LazyDataModel<Object> getLazyModel() {
+        return lazyModel;
+    }
+
+    public void setLazyModel(LazyDataModel<Object> lazyModel) {
+        this.lazyModel = lazyModel;
+    }
+
 }
