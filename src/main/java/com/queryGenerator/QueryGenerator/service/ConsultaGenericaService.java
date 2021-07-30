@@ -44,5 +44,14 @@ public interface ConsultaGenericaService {
 
     public long countResultadosConsulta(Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros);
 
-    public Map<String, String> fragmentaConsultaHql(StringBuilder consultaHql);
+    /**
+     * Metodo que divide la consulta ingresada en partes por "select", "where",
+     * "groupBy" y "sortBy"
+     *
+     * @param consultaHql
+     * @return Map<String, String> donde se almacena cada parte de la consulta
+     * con las llaves "select", "where", "groupBy" y "sortBy".
+     * @throws Exception
+     */
+    public Map<String, String> fragmentaConsultaHql(StringBuilder consultaHql) throws Exception;
 }

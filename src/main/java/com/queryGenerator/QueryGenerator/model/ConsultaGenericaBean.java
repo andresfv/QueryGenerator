@@ -35,7 +35,9 @@ public class ConsultaGenericaBean {
     String consultaHQL = "select cat.id, (select max (kit.weight)"
             + " from cat.kitten kit where kit.weight = 100)"
             + " from Cat as cat"
-            + " where cat.name = some (select name.nickName from Name as name)";
+            + " where cat.name = some (select name.nickName from Name as name)"
+            + " group by cat.name, cat.id"
+            + " sort by cat.name";
 
 
     int tipoConsulta = 1;
@@ -47,7 +49,12 @@ public class ConsultaGenericaBean {
         dataSource = new ArrayList<Object>();
         listaResultadosConsulta = new ArrayList<Object>();
 
-        consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
+        try {
+            consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+
 
         if (tipoConsulta == 1) {
             listaResultadosConsulta = consultaGenericaService.getResultadosConsulta(consultaHQL);

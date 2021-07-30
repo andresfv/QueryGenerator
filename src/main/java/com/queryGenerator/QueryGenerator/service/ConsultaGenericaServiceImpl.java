@@ -197,11 +197,93 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         return orderByQuery;
     }
 
-    public Map<String, String> fragmentaConsultaHql(StringBuilder consultaHql) {
+    /**
+     * Metodo que divide la consulta ingresada en partes por "select", "where",
+     * "groupBy" y "sortBy"
+     *
+     * @param consultaHql
+     * @return Map<String, String> donde se almacena cada parte de la consulta
+     * con las llaves "select", "where", "groupBy" y "sortBy".
+     * @throws Exception
+     */
+    @Override
+    public Map<String, String> fragmentaConsultaHql(StringBuilder consultaHql) throws Exception {
         Map<String, String> listaFragmentosHql = new HashMap<String, String>();
+
+        //Primero se procede a obtener el indice donde comienza cada sección de la consulta hql fuera de parentesis para evitar confundir con una subconsulta.****************
+        int indiceFrom = buscaIndicePalabraFueraParentesis(consultaHql, "from");
+        int indiceWhere = buscaIndicePalabraFueraParentesis(consultaHql, "where");
+        int indiceGroupBy = buscaIndicePalabraFueraParentesis(consultaHql, "group by");
+        int indiceSortBy = buscaIndicePalabraFueraParentesis(consultaHql, "sort by");
+
+        //Posteriormente se procede a separar cada parte de la consulta por select, where, groupBy y sortBy.*************************************************************
+        StringBuilder selectQuery = new StringBuilder();
+        StringBuilder whereQuery = new StringBuilder();
+        StringBuilder groupByQuery = new StringBuilder();
+        StringBuilder sortByQuery = new StringBuilder();
+
+        //Separa la seccion select del hql
+        if (indiceFrom != -1) {
+             selectQuery.append(consultaHql.substring(0, indiceFrom - 1));
+        } else {
+            throw new Exception("La consulta no tiene from");
+        }
+
+        //Separa la seccion where del hql
+        if (indiceWhere != -1) {
+            if (indiceGroupBy == -1 && indiceSortBy == -1) {
+                whereQuery.append(consultaHql.substring(indiceWhere - 1));
+            } else {
+                whereQuery.append(consultaHql.substring(indiceWhere - 1, indiceGroupBy != -1 ? indiceGroupBy : indiceSortBy));
+            }
+        }
+
+        //Separa la seccion group by del hql
+        if (indiceGroupBy != -1) {
+            if (indiceSortBy == -1) {
+                groupByQuery.append(consultaHql.substring(indiceGroupBy - 1));
+            } else {
+                groupByQuery.append(consultaHql.substring(indiceGroupBy - 1, indiceSortBy));
+            }
+        }
+
+        //Separa la seccion sort by del hql
+        if (indiceSortBy != -1) {
+            sortByQuery.append(consultaHql.substring(indiceSortBy - 1));
+        }
+
+        //Finalmente se procede a llenar la variable de tipo map con las partes de la consulta.**************************************************************************************
+        listaFragmentosHql.put("select", selectQuery.toString().trim());
+
+        if (whereQuery.length() > 0) {
+            listaFragmentosHql.put("where", whereQuery.toString().trim());
+        }
+
+        if (groupByQuery.length() > 0) {
+            listaFragmentosHql.put("groupBy", groupByQuery.toString().trim());
+        }
+
+        if (sortByQuery.length() > 0) {
+            listaFragmentosHql.put("sortBy", sortByQuery.toString().trim());
+        }
+
+        return listaFragmentosHql;
+    }
+
+    /**
+     * Método que busca el indice de una palabra en la consulta hql siempre y
+     * cuando esta esté fuera de un parentesis.
+     *
+     * @param consultaHql
+     * @return indice de palabra, -1 en caso de no encontrarla
+     * @throws Exception
+     */
+    public int buscaIndicePalabraFueraParentesis(StringBuilder consultaHql, String palabra) throws Exception {
+        //Primero se buscan los indices donde se abren y cierran parentesis para evitar entorpecer la fragmentacion del hql--------------------------------------------------
 
         //Se usa StringBuilder ya que es mutable
         StringBuilder consultaHqlIndices = new StringBuilder(consultaHql);
+
         int contParentesisIzq = 0;
         int contParentesisDere = 0;
 
@@ -216,7 +298,7 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
         //Verifica si los parentesis son coinciden en caso contrario el hql esta erroneo
         if (contParentesisIzq != contParentesisDere) {
-            return null;
+            throw new Exception("La consulta tiene un parentesis sin cerrar");
         }
 
         //Busca parentesis izq y dere y va reemplazando '(' por '{' y ')' por '}' y repite este proceso por el número de parentesis izq
@@ -244,27 +326,24 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
             }
         }
 
-        //Busca el from del hql verificando que no sea el de una subconsulta
-        StringBuilder selectQueryFinder = new StringBuilder(consultaHql);
+        //Seguidamente se busca el from del hql verificando que no sea el de una subconsulta--------------------------------------------------------------------------------
+        StringBuilder buscadorPalabra = new StringBuilder(consultaHql);
         boolean flag = true;
-        int indexFrom;
+        int indexPalabra;
 
         do {
-            indexFrom = selectQueryFinder.indexOf("from");
+            indexPalabra = buscadorPalabra.indexOf(palabra);
 
             for (int i = 0; i < indices.length; i++) {
-                if (indexFrom == -1) {
-                    System.out.println("El hql introducido no tiene form");
+                if (indexPalabra == -1) {
                     flag = false;
-                    break;
                 }
 
-                if (indexFrom >= indices[i][0] && indexFrom <= indices[i][1]) {
-                    System.out.print(indexFrom + " ");
-                    System.out.print(indices[i][0] + " ");
-                    System.out.print(indices[i][1] + " ");
+                //Verifica que la palabra buscada no este dentro de un parentesis ya que podria tratarse de una subconsulta
+                if (indexPalabra >= indices[i][0] && indexPalabra <= indices[i][1]) {
 
-                    selectQueryFinder.replace(indexFrom, indexFrom + 4, "$$$$");
+                    //Remplaza la palabra encontrada por un token para no volver a ser encontrada
+                    buscadorPalabra.replace(indexPalabra, indexPalabra + 1, "*");
                     flag = true;
                     break;
                 } else {
@@ -274,10 +353,6 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
         } while (flag);
 
-        //Separa la seccion select del hql
-        StringBuilder selectQuery = new StringBuilder(consultaHql.substring(0, indexFrom - 1));
-
-        return listaFragmentosHql;
+        return indexPalabra;
     }
-
 }
