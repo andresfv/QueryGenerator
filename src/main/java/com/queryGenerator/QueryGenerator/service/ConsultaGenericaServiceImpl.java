@@ -52,13 +52,15 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
     }
 
     @Override
-    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros) {
+    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) {
 
-///Para crear el query de forma generica se puede dividir en 4 partes que serían: select from, where, group by, order by
-        StringBuilder selectQuery = new StringBuilder(consultaHql);
-        StringBuilder whereQuery = new StringBuilder();
-        StringBuilder groupByQuery = new StringBuilder();
-        StringBuilder orderByQuery = new StringBuilder();
+///Para crear el query de forma generica se toman las 4 partes que serían: select from, where, group by, order by
+
+        StringBuilder selectQuery = new StringBuilder(listaFragmentosHql.get("select").toString());
+        StringBuilder fromQuery = new StringBuilder(" " + listaFragmentosHql.get("from").toString());
+        StringBuilder whereQuery = new StringBuilder(" " + listaFragmentosHql.get("where").toString());
+        StringBuilder groupByQuery = new StringBuilder(" " + listaFragmentosHql.get("groupBy").toString());
+        StringBuilder orderByQuery = new StringBuilder(" " + listaFragmentosHql.get("orderBy").toString());
         List<Object> resultadosConsulta = new ArrayList<Object>();
 
         //ORDENAMIENTO POR DATATABLE
@@ -77,6 +79,7 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         if (selectQuery.length() > 0) {
             StringBuilder stringQuery = new StringBuilder();
             stringQuery.append(selectQuery);
+            stringQuery.append(fromQuery);
             if (whereQuery.length() > 0) {
                 stringQuery.append(whereQuery);
             }
@@ -103,10 +106,11 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
     }
 
     @Override
-    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, String consultaHql, Map<String, Object> listaParametros) {
-        StringBuilder selectQuery = new StringBuilder(consultaHql);
-        StringBuilder whereQuery = new StringBuilder();
-        StringBuilder groupByQuery = new StringBuilder();
+    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) {
+        StringBuilder selectQuery = new StringBuilder(listaFragmentosHql.get("select").toString());
+        StringBuilder fromQuery = new StringBuilder(" " + listaFragmentosHql.get("from").toString());
+        StringBuilder whereQuery = new StringBuilder(" " + listaFragmentosHql.get("where").toString());
+        StringBuilder groupByQuery = new StringBuilder(" " + listaFragmentosHql.get("groupBy").toString());
 
         //FILTRADO POR DATATABLE
         if (filterBy != null && filterBy.size() > 0) {
@@ -119,6 +123,7 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         if (selectQuery.length() > 0) {
             StringBuilder stringQuery = new StringBuilder();
             stringQuery.append(selectQuery);
+            stringQuery.append(fromQuery);
             if (whereQuery.length() > 0) {
                 stringQuery.append(whereQuery);
             }
@@ -207,64 +212,81 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
      * @throws Exception
      */
     @Override
-    public Map<String, String> fragmentaConsultaHql(StringBuilder consultaHql) throws Exception {
-        Map<String, String> listaFragmentosHql = new HashMap<String, String>();
+    public Map<String, Object> fragmentaConsultaHql(StringBuilder consultaHql) throws Exception {
+        Map<String, Object> listaFragmentosHql = new HashMap<String, Object>();
 
-        //Primero se procede a obtener el indice donde comienza cada sección de la consulta hql fuera de parentesis para evitar confundir con una subconsulta.****************
-        int indiceFrom = buscaIndicePalabraFueraParentesis(consultaHql, "from");
-        int indiceWhere = buscaIndicePalabraFueraParentesis(consultaHql, "where");
-        int indiceGroupBy = buscaIndicePalabraFueraParentesis(consultaHql, "group by");
-        int indiceSortBy = buscaIndicePalabraFueraParentesis(consultaHql, "sort by");
-
-        //Posteriormente se procede a separar cada parte de la consulta por select, where, groupBy y sortBy.*************************************************************
+        //Se procede a separar cada parte de la consulta por select, where, groupBy y sortBy.*************************************************************
         StringBuilder selectQuery = new StringBuilder();
+        StringBuilder fromQuery = new StringBuilder();
         StringBuilder whereQuery = new StringBuilder();
         StringBuilder groupByQuery = new StringBuilder();
         StringBuilder sortByQuery = new StringBuilder();
 
-        //Separa la seccion select del hql
+        List<String> listaColumnas = new ArrayList<String>();
+        StringBuilder cadenaColumnas;
+
+        //Separa la seccion sort by del hql
+        //Se obtiene el indice donde comienza cada sección de la consulta hql fuera de parentesis para evitar confundir con una subconsulta.****************
+        int indiceSortBy = buscaIndicePalabraFueraParentesis(consultaHql, "sort by");
+
+        if (indiceSortBy != -1) {
+            sortByQuery.append(consultaHql.substring(indiceSortBy - 1));
+            consultaHql = new StringBuilder(consultaHql.substring(0, indiceSortBy));
+        }
+
+        //Separa la seccion group by del hql
+        int indiceGroupBy = buscaIndicePalabraFueraParentesis(consultaHql, "group by");
+
+        if (indiceGroupBy != -1) {
+            groupByQuery.append(consultaHql.substring(indiceGroupBy - 1));
+            consultaHql = new StringBuilder(consultaHql.substring(0, indiceGroupBy));
+        }
+
+        //Separa la seccion where del hql
+        int indiceWhere = buscaIndicePalabraFueraParentesis(consultaHql, "where");
+
+        if (indiceWhere != -1) {
+            whereQuery.append(consultaHql.substring(indiceWhere - 1));
+            consultaHql = new StringBuilder(consultaHql.substring(0, indiceWhere));
+        }
+
+        //Separa la seccion from del hql
+        int indiceFrom = buscaIndicePalabraFueraParentesis(consultaHql, "from");
+
         if (indiceFrom != -1) {
-             selectQuery.append(consultaHql.substring(0, indiceFrom - 1));
+            fromQuery.append(consultaHql.substring(indiceFrom - 1));
+            consultaHql = new StringBuilder(consultaHql.substring(0, indiceFrom));
         } else {
             throw new Exception("La consulta no tiene from");
         }
 
-        //Separa la seccion where del hql
-        if (indiceWhere != -1) {
-            if (indiceGroupBy == -1 && indiceSortBy == -1) {
-                whereQuery.append(consultaHql.substring(indiceWhere - 1));
-            } else {
-                whereQuery.append(consultaHql.substring(indiceWhere - 1, indiceGroupBy != -1 ? indiceGroupBy : indiceSortBy));
-            }
-        }
+        //Separa la seccion select del hql
+        selectQuery.append(consultaHql);
 
-        //Separa la seccion group by del hql
-        if (indiceGroupBy != -1) {
-            if (indiceSortBy == -1) {
-                groupByQuery.append(consultaHql.substring(indiceGroupBy - 1));
-            } else {
-                groupByQuery.append(consultaHql.substring(indiceGroupBy - 1, indiceSortBy));
-            }
-        }
+        //Busca el nombre de cada columna de la consulta
+        cadenaColumnas = new StringBuilder(selectQuery.toString().toUpperCase() + ",");
+        while (cadenaColumnas.toString().contains(" AS ")) {
+            int indiceAS = buscaIndicePalabraFueraParentesis(cadenaColumnas, " AS ");
+            int indiceComa = buscaIndicePalabraFueraParentesis(cadenaColumnas, ",");
 
-        //Separa la seccion sort by del hql
-        if (indiceSortBy != -1) {
-            sortByQuery.append(consultaHql.substring(indiceSortBy - 1));
+            listaColumnas.add(cadenaColumnas.substring(indiceAS + 4, indiceComa).trim());
+            cadenaColumnas = new StringBuilder(cadenaColumnas.substring(indiceComa + 1));
         }
 
         //Finalmente se procede a llenar la variable de tipo map con las partes de la consulta.**************************************************************************************
         listaFragmentosHql.put("select", selectQuery.toString().trim());
 
-        if (whereQuery.length() > 0) {
-            listaFragmentosHql.put("where", whereQuery.toString().trim());
-        }
+        listaFragmentosHql.put("from", fromQuery.toString().trim());
 
-        if (groupByQuery.length() > 0) {
-            listaFragmentosHql.put("groupBy", groupByQuery.toString().trim());
-        }
+        listaFragmentosHql.put("where", whereQuery.toString().trim());
 
-        if (sortByQuery.length() > 0) {
-            listaFragmentosHql.put("sortBy", sortByQuery.toString().trim());
+        listaFragmentosHql.put("groupBy", groupByQuery.toString().trim());
+
+        listaFragmentosHql.put("orderBy", sortByQuery.toString().trim());
+
+
+        if (listaColumnas.size() > 0) {
+            listaFragmentosHql.put("columnas", listaColumnas);
         }
 
         return listaFragmentosHql;
@@ -327,12 +349,12 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         }
 
         //Seguidamente se busca el from del hql verificando que no sea el de una subconsulta--------------------------------------------------------------------------------
-        StringBuilder buscadorPalabra = new StringBuilder(consultaHql);
+        StringBuilder buscadorPalabra = new StringBuilder(consultaHql.toString().toUpperCase());
         boolean flag = true;
         int indexPalabra;
 
         do {
-            indexPalabra = buscadorPalabra.indexOf(palabra);
+            indexPalabra = buscadorPalabra.indexOf(palabra.toUpperCase());
 
             for (int i = 0; i < indices.length; i++) {
                 if (indexPalabra == -1) {

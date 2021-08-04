@@ -21,23 +21,24 @@ public class ConsultaGenericaBean {
     @Autowired
     ConsultaGenericaService consultaGenericaService;
 
-    List<Object> dataSource;
-    List<Object> listaResultadosConsulta;
-    FacesMessage message;
+    private List<Object> dataSource;
+    private List<Object> listaResultadosConsulta;
+    private FacesMessage message;
 
     private LazyDataModel<Object> lazyModel;
+    private Map<String, Object> fragmentosHql = new HashMap<String, Object>();
 
-//    String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
-//            + "                vmc.fechaAplicacion, \n"
-//            + "                vmc.numeroAsiento)\n"
-//            + "                from  VistaMovimientoContableActivoFijo   vmc";
+    String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
+            + "                vmc.fechaAplicacion, \n"
+            + "                vmc.numeroAsiento)\n"
+            + "                from  VistaMovimientoContableActivoFijo   vmc";
 
-    String consultaHQL = "select cat.id, (select max (kit.weight)"
-            + " from cat.kitten kit where kit.weight = 100)"
-            + " from Cat as cat"
-            + " where cat.name = some (select name.nickName from Name as name)"
-            + " group by cat.name, cat.id"
-            + " sort by cat.name";
+//    String consultaHQL = "select cat.id as id, (select max (kit.weight)"
+//            + " from cat.kitten kit where kit.weight = 100) as weigth"
+//            + " from Cat as cat"
+//            + " where cat.name = some (select name.nickName from Name as name)"
+//            + " group by cat.name, cat.id"
+//            + " sort by cat.name";
 
 
     int tipoConsulta = 1;
@@ -50,7 +51,7 @@ public class ConsultaGenericaBean {
         listaResultadosConsulta = new ArrayList<Object>();
 
         try {
-            consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
+            fragmentosHql = consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -67,11 +68,11 @@ public class ConsultaGenericaBean {
             @Override
             public List<Object> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
 
-                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, consultaHQL, listaParametros);
+//                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, fragmentosHql, listaParametros);
 
-                List<Object> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, consultaHQL, listaParametros);
+                List<Object> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, fragmentosHql, listaParametros);
 
-//              long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
                 setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
 
                 return resultadosConsulta;
