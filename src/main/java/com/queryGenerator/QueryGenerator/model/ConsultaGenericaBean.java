@@ -10,6 +10,8 @@ import javax.inject.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.faces.application.FacesMessage;
 import org.primefaces.model.FilterMeta;
 import org.primefaces.model.LazyDataModel;
@@ -28,9 +30,11 @@ public class ConsultaGenericaBean {
     private LazyDataModel<Object> lazyModel;
     private Map<String, Object> fragmentosHql = new HashMap<String, Object>();
 
+    private static final Logger logger = Logger.getLogger(ConsultaGenericaBean.class.getName());
+
     String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
-            + "                vmc.fechaAplicacion, \n"
-            + "                vmc.numeroAsiento)\n"
+            + "                vmc.fechaAplicacion as fechaAplicacion, \n"
+            + "                vmc.numeroAsiento as numeroAsiento)\n"
             + "                from  VistaMovimientoContableActivoFijo   vmc";
 
 //    String consultaHQL = "select cat.id as id, (select max (kit.weight)"
@@ -39,8 +43,6 @@ public class ConsultaGenericaBean {
 //            + " where cat.name = some (select name.nickName from Name as name)"
 //            + " group by cat.name, cat.id"
 //            + " sort by cat.name";
-
-
     int tipoConsulta = 1;
 
     Map<String, Object> listaParametros = new HashMap<String, Object>();
@@ -56,7 +58,6 @@ public class ConsultaGenericaBean {
             System.out.println("Error: " + e.getMessage());
         }
 
-
         if (tipoConsulta == 1) {
             listaResultadosConsulta = consultaGenericaService.getResultadosConsulta(consultaHQL);
         }
@@ -67,13 +68,19 @@ public class ConsultaGenericaBean {
         lazyModel = new LazyDataModel<Object>() {
             @Override
             public List<Object> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+                List<Object> resultadosConsulta = new ArrayList<Object>();
+                try {
 
-//                long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, fragmentosHql, listaParametros);
+                    long rowCount = consultaGenericaService.countResultadosConsulta(filterBy, fragmentosHql, listaParametros);
 
-                List<Object> resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, fragmentosHql, listaParametros);
+                    resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, fragmentosHql, listaParametros);
 
-                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
-                setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
+//                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+                    setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
+
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "ERROR CAUSADO POR: " + e.getMessage());
+                }
 
                 return resultadosConsulta;
 
@@ -96,7 +103,6 @@ public class ConsultaGenericaBean {
     public void setConsultaHQL(String consultaHQL) {
         this.consultaHQL = consultaHQL;
     }
-
 
     public List<Object> getListaResultadosConsulta() {
         return listaResultadosConsulta;

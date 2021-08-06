@@ -52,15 +52,15 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
     }
 
     @Override
-    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) {
+    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) throws Exception {
 
 ///Para crear el query de forma generica se toman las 4 partes que serían: select from, where, group by, order by
 
         StringBuilder selectQuery = new StringBuilder(listaFragmentosHql.get("select").toString());
-        StringBuilder fromQuery = new StringBuilder(" " + listaFragmentosHql.get("from").toString());
-        StringBuilder whereQuery = new StringBuilder(" " + listaFragmentosHql.get("where").toString());
-        StringBuilder groupByQuery = new StringBuilder(" " + listaFragmentosHql.get("groupBy").toString());
-        StringBuilder orderByQuery = new StringBuilder(" " + listaFragmentosHql.get("orderBy").toString());
+        StringBuilder fromQuery = new StringBuilder(listaFragmentosHql.get("from").toString());
+        StringBuilder whereQuery = new StringBuilder(listaFragmentosHql.get("where").toString());
+        StringBuilder groupByQuery = new StringBuilder(listaFragmentosHql.get("groupBy").toString());
+        StringBuilder orderByQuery = new StringBuilder(listaFragmentosHql.get("orderBy").toString());
         List<Object> resultadosConsulta = new ArrayList<Object>();
 
         //ORDENAMIENTO POR DATATABLE
@@ -79,15 +79,15 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         if (selectQuery.length() > 0) {
             StringBuilder stringQuery = new StringBuilder();
             stringQuery.append(selectQuery);
-            stringQuery.append(fromQuery);
+            stringQuery.append(" " + fromQuery);
             if (whereQuery.length() > 0) {
-                stringQuery.append(whereQuery);
+                stringQuery.append(" " + whereQuery);
             }
             if (groupByQuery.length() > 0) {
-                stringQuery.append(groupByQuery);
+                stringQuery.append(" " + groupByQuery);
             }
             if (orderByQuery.length() > 0) {
-                stringQuery.append(orderByQuery);
+                stringQuery.append(" " + orderByQuery);
             }
 
             //EJECUCION DEL HQL
@@ -106,11 +106,12 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
     }
 
     @Override
-    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) {
-        StringBuilder selectQuery = new StringBuilder(listaFragmentosHql.get("select").toString());
-        StringBuilder fromQuery = new StringBuilder(" " + listaFragmentosHql.get("from").toString());
-        StringBuilder whereQuery = new StringBuilder(" " + listaFragmentosHql.get("where").toString());
-        StringBuilder groupByQuery = new StringBuilder(" " + listaFragmentosHql.get("groupBy").toString());
+    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) throws Exception {
+        StringBuilder countColumn = new StringBuilder(listaFragmentosHql.get("count").toString());
+        StringBuilder fromQuery = new StringBuilder(listaFragmentosHql.get("from").toString());
+        StringBuilder whereQuery = new StringBuilder(listaFragmentosHql.get("where").toString());
+        StringBuilder groupByQuery = new StringBuilder(listaFragmentosHql.get("groupBy").toString());
+        StringBuilder stringQuery = new StringBuilder();
 
         //FILTRADO POR DATATABLE
         if (filterBy != null && filterBy.size() > 0) {
@@ -120,15 +121,14 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         }
 
         //ARMADO DEL HQL
-        if (selectQuery.length() > 0) {
-            StringBuilder stringQuery = new StringBuilder();
-            stringQuery.append(selectQuery);
-            stringQuery.append(fromQuery);
+        if (countColumn.length() > 0) {
+            stringQuery.append("select count(" + countColumn + ")");
+            stringQuery.append(" " + fromQuery);
             if (whereQuery.length() > 0) {
-                stringQuery.append(whereQuery);
+                stringQuery.append(" " + whereQuery);
             }
             if (groupByQuery.length() > 0) {
-                stringQuery.append(groupByQuery);
+                stringQuery.append(" group by " + countColumn);
             }
 
             //EJECUCION DEL HQL
@@ -221,6 +221,8 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         StringBuilder whereQuery = new StringBuilder();
         StringBuilder groupByQuery = new StringBuilder();
         StringBuilder sortByQuery = new StringBuilder();
+        StringBuilder countColumn = new StringBuilder();
+
 
         List<String> listaColumnas = new ArrayList<String>();
         StringBuilder cadenaColumnas;
@@ -263,9 +265,33 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         //Separa la seccion select del hql
         selectQuery.append(consultaHql);
 
+        //Crea la consulta contador separando la primer columna de la consulta y utilizandola de contador.
+        int indexAs = selectQuery.toString().toUpperCase().indexOf(" AS ");
+        if (indexAs != -1) {
+            //Verifica que no se este instanciando un de objeto, de ser asi solo se toman los valores dentro del contructor
+            if (selectQuery.toString().toUpperCase().contains("SELECT NEW ")) {
+                int indexAbreParentesis = selectQuery.indexOf("(") + 1;
+                int indexCierraParentesis = selectQuery.lastIndexOf(")");
+                countColumn.append(selectQuery.substring(indexAbreParentesis, indexCierraParentesis));
+                indexAs = countColumn.toString().toUpperCase().indexOf(" AS ");//Se debe recalcular el indexOf debido a que se hizo un substring
+                countColumn = new StringBuilder(countColumn.substring(7, indexAs).trim());
+            } else {
+                countColumn.append(selectQuery.substring(7, indexAs).trim());
+            }
+        } else {
+            throw new Exception("Debe añadir la palabra 'AS' seguido de un alias para cada campo del select");
+        }
+
         //Busca el nombre de cada columna de la consulta
-        cadenaColumnas = new StringBuilder(selectQuery.toString().toUpperCase() + ",");
-        while (cadenaColumnas.toString().contains(" AS ")) {
+        cadenaColumnas = new StringBuilder(selectQuery.toString() + ",");
+        //Verifica que no se este instanciando un de objeto, de ser asi solo se toman los valores dentro del contructor
+        if (cadenaColumnas.toString().toUpperCase().contains("SELECT NEW ")) {
+            int indexAbreParentesis = cadenaColumnas.indexOf("(") + 1;
+            int indexCierraParentesis = cadenaColumnas.lastIndexOf(")");
+            cadenaColumnas = new StringBuilder(cadenaColumnas.substring(indexAbreParentesis, indexCierraParentesis) + ",");
+        }
+
+        while (cadenaColumnas.toString().toUpperCase().contains(" AS ")) {
             int indiceAS = buscaIndicePalabraFueraParentesis(cadenaColumnas, " AS ");
             int indiceComa = buscaIndicePalabraFueraParentesis(cadenaColumnas, ",");
 
@@ -283,6 +309,8 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         listaFragmentosHql.put("groupBy", groupByQuery.toString().trim());
 
         listaFragmentosHql.put("orderBy", sortByQuery.toString().trim());
+
+        listaFragmentosHql.put("count", countColumn.toString().trim());
 
 
         if (listaColumnas.size() > 0) {
@@ -321,6 +349,10 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         //Verifica si los parentesis son coinciden en caso contrario el hql esta erroneo
         if (contParentesisIzq != contParentesisDere) {
             throw new Exception("La consulta tiene un parentesis sin cerrar");
+        }
+
+        if (contParentesisIzq == 0 && contParentesisDere == 0) {
+            return consultaHql.toString().toUpperCase().indexOf(palabra.toUpperCase());
         }
 
         //Busca parentesis izq y dere y va reemplazando '(' por '{' y ')' por '}' y repite este proceso por el número de parentesis izq
