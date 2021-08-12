@@ -40,9 +40,9 @@ public interface ConsultaGenericaService {
      * @return lista de resultados filtrada por pagina y ordenada segun
      * parametro.
      */
-    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros);
+    public List<Object> getResultadosConsulta(int pageNumber, int pageSize, Map<String, SortMeta> sort, Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) throws Exception;
 
-    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros);
+    public long countResultadosConsulta(Map<String, FilterMeta> filterBy, Map<String, Object> listaFragmentosHql, Map<String, Object> listaParametros) throws Exception;
 
     /**
      * Metodo que divide la consulta ingresada en partes por "select", "where",
