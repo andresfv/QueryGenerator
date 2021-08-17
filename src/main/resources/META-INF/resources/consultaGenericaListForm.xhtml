@@ -57,6 +57,7 @@
                      reflow="true"
                      multiViewState="true"
                      lazy="#{consultaGenericaBean.tipoConsulta == 2}">
+             <p:ajax event="filter" listener="#{consultaGenericaBean.filterListener}"/>
 
             <f:facet name="header">
                 <div class="p-d-flex p-jc-between p-ai-center">
