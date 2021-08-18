@@ -122,13 +122,13 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
 
         //ARMADO DEL HQL
         if (countColumn.length() > 0) {
-            stringQuery.append("select count(" + countColumn + ")");
+            stringQuery.append("select count(*)");
             stringQuery.append(" " + fromQuery);
             if (whereQuery.length() > 0) {
                 stringQuery.append(" " + whereQuery);
             }
             if (groupByQuery.length() > 0) {
-                stringQuery.append(" group by " + countColumn);
+                stringQuery.append(" " + groupByQuery);
             }
 
             //EJECUCION DEL HQL
@@ -272,9 +272,9 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
             if (selectQuery.toString().toUpperCase().contains("SELECT NEW ")) {
                 int indexAbreParentesis = selectQuery.indexOf("(") + 1;
                 int indexCierraParentesis = selectQuery.lastIndexOf(")");
-                countColumn.append(selectQuery.substring(indexAbreParentesis, indexCierraParentesis));
-                indexAs = countColumn.toString().toUpperCase().indexOf(" AS ");//Se debe recalcular el indexOf debido a que se hizo un substring
-                countColumn = new StringBuilder(countColumn.substring(7, indexAs).trim());
+                countColumn.append(selectQuery.substring(indexAbreParentesis, indexCierraParentesis).trim());
+//                indexAs = countColumn.toString().toUpperCase().indexOf(" AS ");//Se debe recalcular el indexOf debido a que se hizo un substring
+//                countColumn = new StringBuilder(countColumn.substring(7, indexAs).trim());
             } else {
                 countColumn.append(selectQuery.substring(7, indexAs).trim());
             }
