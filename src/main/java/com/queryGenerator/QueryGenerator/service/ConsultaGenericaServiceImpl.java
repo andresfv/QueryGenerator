@@ -112,6 +112,7 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
         StringBuilder whereQuery = new StringBuilder(listaFragmentosHql.get("where").toString());
         StringBuilder groupByQuery = new StringBuilder(listaFragmentosHql.get("groupBy").toString());
         StringBuilder stringQuery = new StringBuilder();
+        long countResult = 0;
 
         //FILTRADO POR DATATABLE
         if (filterBy != null && filterBy.size() > 0) {
@@ -138,8 +139,12 @@ public class ConsultaGenericaServiceImpl implements ConsultaGenericaService {
                 Map.Entry<String, Object> parametro = parametroIterador.next();
                 query.setParameter(parametro.getKey(), parametro.getValue());
             }
+            if (groupByQuery.length() == 0) {
+                countResult = (long) query.getSingleResult();
+            } else {
+                countResult = (long) query.getResultList().size();
+            }
 
-            long countResult = (long) query.getSingleResult();
             return countResult;
         }
         return 0L;
