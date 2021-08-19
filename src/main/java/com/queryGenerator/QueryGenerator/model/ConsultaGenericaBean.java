@@ -40,9 +40,9 @@ public class ConsultaGenericaBean {
     String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
             + "                vmc.fechaAplicacion as fechaAplicacion, \n"
             + "                vmc.numeroAsiento as numeroAsiento)\n"
-            + "                from  VistaMovimientoContableActivoFijo   vmc"
+            + "                from  VistaMovimientoContableActivoFijo vmc\n"
             + "                group by vmc.fechaAplicacion, \n"
-            + "                              vmc.numeroAsiento";
+            + "                vmc.numeroAsiento";
 
 //    String consultaHQL = "select cat.id as id, (select max (kit.weight)"
 //            + " from cat.kitten kit where kit.weight = 100) as weigth"
@@ -85,7 +85,7 @@ public class ConsultaGenericaBean {
 
                     resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, fragmentosHql, listaParametros);
 
-//                long rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+                    // rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
                     setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
 
                 } catch (Exception e) {
