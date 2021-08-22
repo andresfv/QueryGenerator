@@ -32,17 +32,16 @@ public class ConsultaGenericaBean {
     private Map<String, Object> fragmentosHql = new HashMap<String, Object>();
 
     private boolean contar; //Establece si se debe ejecutar query de conteo
+    private boolean sinContador;//Almacena si el usuario desea o no usar contador
 
-    private long rowCount;
+    private long rowCount;//Almacena el numero total de registros de la consulta
 
     private static final Logger logger = Logger.getLogger(ConsultaGenericaBean.class.getName());
 
     String consultaHQL = "select new com.queryGenerator.QueryGenerator.entity.VistaMovimientoContableActivoFijo (\n"
             + "                vmc.fechaAplicacion as fechaAplicacion, \n"
             + "                vmc.numeroAsiento as numeroAsiento)\n"
-            + "                from  VistaMovimientoContableActivoFijo vmc\n"
-            + "                group by vmc.fechaAplicacion, \n"
-            + "                vmc.numeroAsiento";
+            + "                from  VistaMovimientoContableActivoFijo vmc";
 
 //    String consultaHQL = "select cat.id as id, (select max (kit.weight)"
 //            + " from cat.kitten kit where kit.weight = 100) as weigth"
@@ -59,6 +58,7 @@ public class ConsultaGenericaBean {
         dataSource = new ArrayList<Object>();
         listaResultadosConsulta = new ArrayList<Object>();
         contar = true;
+        sinContador = false;
 
         try {
             fragmentosHql = consultaGenericaService.fragmentaConsultaHql(new StringBuilder(consultaHQL));
@@ -78,15 +78,22 @@ public class ConsultaGenericaBean {
             public List<Object> load(int offset, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
                 List<Object> resultadosConsulta = new ArrayList<Object>();
                 try {
-                    if (contar) {
-                        rowCount = consultaGenericaService.countResultadosConsulta(filterBy, fragmentosHql, listaParametros);
-                        contar = false;
-                    }
-
+                    //Realiza consulta hql paginada
                     resultadosConsulta = consultaGenericaService.getResultadosConsulta(offset, pageSize, sortBy, filterBy, fragmentosHql, listaParametros);
 
-                    // rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
-                    setRowCount((int) rowCount);// Setea el número total de filas de la consulta para establecer la ultima pagina
+                    //Verifica si debe usar o no contador según opcion elegida por el usaurio
+                    if (sinContador) {
+                        rowCount = resultadosConsulta.size() < pageSize ? offset + resultadosConsulta.size() : offset + pageSize + 1;
+                    } else {
+                        //Establece si se debe volver a contar los registros en caso de haberse aplicado un filtro desde el dataTable
+                        if (contar) {
+                            rowCount = consultaGenericaService.countResultadosConsulta(filterBy, fragmentosHql, listaParametros);
+                            contar = false;
+                        }
+                    }
+
+                    // Establece el número total de filas de la consulta para establecer la ultima pagina
+                    setRowCount((int) rowCount);
 
                 } catch (Exception e) {
                     logger.log(Level.SEVERE, "ERROR CAUSADO POR: " + e.getMessage());
@@ -130,6 +137,15 @@ public class ConsultaGenericaBean {
         this.lazyModel = lazyModel;
     }
 
+    public boolean isSinContador() {
+        return sinContador;
+    }
+
+    public void setSinContador(boolean sinContador) {
+        this.sinContador = sinContador;
+    }
+
+
     /**
      * Permite indicar que se debe volver a contar ya que se adicionaron filtros
      * por lo que se debe modificar el total de paginas.
@@ -138,5 +154,37 @@ public class ConsultaGenericaBean {
      */
     public void filterListener(FilterEvent filterEvent) {
         contar = true;
+    }
+
+    /**
+     * Establece el tipo de plantilla de paginacion a mostrar dependiendo de si
+     * se utilizara contador o no.
+     *
+     * @return String de plantillas a utilizar
+     */
+    public String obtenerPaginatorTemplate() {
+        if (tipoConsulta == 1) {
+            return "{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}";
+        } else if (sinContador) {
+            return "{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {NextPageLink} {RowsPerPageDropdown}";
+        } else {
+            return "{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}";
+        }
+
+    }
+        /**
+         * Establece el tipo de plantilla de página actual a mostrar dependiendo
+         * de si se utilizara contador o no.
+         *
+         * @return String de plantillas a utilizar
+         */
+    public String obtenerCurrentPageTemplate() {
+        if (tipoConsulta == 1) {
+            return "{startRecord}-{endRecord} de {totalRecords} registros";
+        } else if (sinContador) {
+            return "{startRecord}-{endRecord} de muchos registros";
+        } else {
+            return "{startRecord}-{endRecord} de {totalRecords} registros";
+        }
     }
 }
