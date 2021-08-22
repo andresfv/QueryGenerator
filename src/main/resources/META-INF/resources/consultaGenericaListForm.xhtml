@@ -24,6 +24,14 @@
                 <f:selectItem itemLabel="Personalizada" itemValue="2" itemDescription="Recomendada para consultas pesadas"/>
                 <p:ajax update="centerForm" process="@this"/>
             </p:selectOneMenu>
+
+            <p:outputPanel/>
+            <p:panelGrid columns="2" styleClass="una-panelgrid">
+            <p:selectBooleanCheckbox id="usarContadorBooleanCheckbox" value="#{consultaGenericaBean.sinContador}">
+                <p:ajax update="centerForm" process="@this"/>
+            </p:selectBooleanCheckbox>
+             <p:outputLabel for="usarContadorBooleanCheckbox" value="Sin Contador"/>
+             </p:panelGrid>
         </p:panelGrid>
 
         <p:panel id="panelGridForm"  header="Ingrese la consulta HQL">
@@ -51,13 +59,13 @@
                      filterEvent="enter"
                      editable="true"
                      paginator="true"
-                     paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-                     currentPageReportTemplate="{startRecord}-{endRecord} de {totalRecords} registros"
+                     paginatorTemplate="#{consultaGenericaBean.obtenerPaginatorTemplate()}"
+                     currentPageReportTemplate="#{consultaGenericaBean.obtenerCurrentPageTemplate()}"
                      rowsPerPageTemplate="5,10,15"
                      reflow="true"
                      multiViewState="true"
                      lazy="#{consultaGenericaBean.tipoConsulta == 2}">
-             <p:ajax event="filter" listener="#{consultaGenericaBean.filterListener}"/>
+            <p:ajax event="filter" listener="#{consultaGenericaBean.filterListener}"/>
 
             <f:facet name="header">
                 <div class="p-d-flex p-jc-between p-ai-center">
